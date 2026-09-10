@@ -16,11 +16,10 @@ const state = {
   selectedPlaceIndex: 0,
   expandedSubPlaceIndex: -1,
   subPlacesData: {},
-  displayCount: 5, // 기본 5개 표시
+  displayCount: 5,
   isKakaoAvailable: false
 };
 
-// 💡 다양한 유형의 풍부한 테스트 장소 데이터 (API 차단/더미용)
 const FALLBACK_LOCATIONS = {
   '의정부역 (지하철역)': { lat: 37.7384, lng: 127.0459, address: '경기 의정부시 평화로 525' },
   '신세계백화점 의정부점': { lat: 37.7382, lng: 127.0465, address: '경기 의정부시 평화로 525' },
@@ -129,7 +128,7 @@ function renderUserInputs() {
         <div class="search-dropdown hidden" id="dropdown-${user.id}"></div>
       </div>
       <select class="mode-select" data-id="${user.id}">
-        <option value="TRANSIT" ${user.mode === 'TRANSIT' ? 'selected' : ''}>🚌 버스</option>
+        <option value="TRANSIT" ${user.mode === 'TRANSIT' ? 'selected' : ''}>🚌 버스/지하철</option>
         <option value="WALK" ${user.mode === 'WALK' ? 'selected' : ''}>🚶 도보</option>
       </select>
       ${state.users.length > 2 ? `<button class="btn-remove" data-id="${user.id}">&times;</button>` : ''}
@@ -284,7 +283,7 @@ async function handleSearch() {
   closeAllDropdowns();
   state.expandedSubPlaceIndex = -1;
   state.subPlacesData = {};
-  state.displayCount = 5; // 기본 5개 표시
+  state.displayCount = 5;
 
   const validUsers = state.users.filter(u => u.name.trim().length > 0);
   if (validUsers.length < 2) return showStatus('최소 2명 이상의 출발지를 입력해 주세요.');
@@ -375,6 +374,7 @@ async function fetchDiversePlaces(center, type) {
             if (!placeMap.has(i.place_name)) {
               placeMap.set(i.place_name, {
                 name: i.place_name,
+                originalName: i.place_name,
                 address: i.address_name || i.road_address_name,
                 coords: { lat: parseFloat(i.y), lng: parseFloat(i.x) }
               });
@@ -393,6 +393,7 @@ async function fetchDiversePlaces(center, type) {
 function getFallbackDiversePlaces(type) {
   const allList = Object.keys(FALLBACK_LOCATIONS).map(key => ({
     name: key,
+    originalName: key,
     address: FALLBACK_LOCATIONS[key].address,
     coords: { lat: FALLBACK_LOCATIONS[key].lat, lng: FALLBACK_LOCATIONS[key].lng }
   }));
@@ -405,46 +406,66 @@ function getFallbackDiversePlaces(type) {
   return allList;
 }
 
+// 카카오 공식 카테고리 API(CE7: 카페, FD6: 음식점)로 주변 600m 이내 매장 가져오기
 function fetchSubPlacesAroundLandmark(coords) {
   return new Promise((resolve) => {
     if (!state.isKakaoAvailable) {
       resolve([
-        { name: '주변 분위기 좋은 카페', category: '☕ 카페' },
-        { name: '인근 맛집 / 식당가', category: '🍕 식당' },
-        { name: '보드게임 / 액티비티', category: '🎮 놀거리' },
-        { name: '문화공간 및 쉼터', category: '🎬 휴식/문화' }
+        { name: '투썸플레이스', category: '☕ 카페', address: '주변 100m 이내', coords },
+        { name: '스타벅스', category: '☕ 카페', address: '주변 200m 이내', coords },
+        { name: '주변 파스타 전문점', category: '🍕 맛집', address: '주변 150m 이내', coords },
+        { name: '수제버거 맛집', category: '🍕 맛집', address: '주변 250m 이내', coords }
       ]);
       return;
     }
 
     const ps = new kakao.maps.services.Places();
-    const options = { location: new kakao.maps.LatLng(coords.lat, coords.lng), radius: 300 };
+    const options = { 
+      location: new kakao.maps.LatLng(coords.lat, coords.lng), 
+      radius: 600,
+      sort: kakao.maps.services.SortBy.DISTANCE 
+    };
+    const subList = [];
 
-    ps.keywordSearch('카페 식당 놀거리', (data, status) => {
-      if (status === kakao.maps.services.Status.OK && data.length > 0) {
-        const subList = data.slice(0, 8).map(item => ({
-          name: item.place_name,
-          category: item.category_group_name || '매장'
-        }));
-        resolve(subList);
-      } else {
-        resolve([
-          { name: '인근 대표 카페', category: '☕ 카페' },
-          { name: '주변 대표 음식점', category: '🍕 식당' },
-          { name: '주변 보드게임카페', category: '🎮 놀거리' }
-        ]);
+    // 1. 카카오 공식 카페 카테고리 검색 (CE7)
+    ps.categorySearch('CE7', (cafeData, cafeStatus) => {
+      if (cafeStatus === kakao.maps.services.Status.OK && cafeData.length > 0) {
+        cafeData.slice(0, 4).forEach(item => {
+          subList.push({
+            name: item.place_name,
+            category: '☕ 카페',
+            address: item.road_address_name || item.address_name || '주소 정보 없음',
+            coords: { lat: parseFloat(item.y), lng: parseFloat(item.x) }
+          });
+        });
       }
+
+      // 2. 카카오 공식 음식점 카테고리 검색 (FD6)
+      ps.categorySearch('FD6', (foodData, foodStatus) => {
+        if (foodStatus === kakao.maps.services.Status.OK && foodData.length > 0) {
+          foodData.slice(0, 4).forEach(item => {
+            subList.push({
+              name: item.place_name,
+              category: '🍕 맛집',
+              address: item.road_address_name || item.address_name || '주소 정보 없음',
+              coords: { lat: parseFloat(item.y), lng: parseFloat(item.x) }
+            });
+          });
+        }
+        resolve(subList);
+      }, options);
     }, options);
   });
 }
 
 function evaluateCandidates(users, candidates) {
   return candidates.map(place => {
+    const originalName = place.originalName || place.name;
     const userTimes = users.map(user => {
       const distKm = getDistanceKm(user.coords.lat, user.coords.lng, place.coords.lat, place.coords.lng);
       return { label: user.label, name: user.name, mode: user.mode, distKm, time: calculateTravelTime(distKm, user.mode) };
     });
-    return { ...place, userTimes, metrics: calculateFairness(userTimes.map(u => u.time)) };
+    return { ...place, originalName, userTimes, metrics: calculateFairness(userTimes.map(u => u.time)) };
   });
 }
 
@@ -487,11 +508,13 @@ function renderSidebarResults(results, users) {
     let subPlacesHtml = '';
     if (isExpanded) {
       const list = state.subPlacesData[index] || [];
-      const itemsHtml = list.map(sp => {
-        const safeName = sp.name.replace(/'/g, "\\'");
+      const itemsHtml = list.map((sp, spIdx) => {
         return `
-          <div class="sub-place-item" onclick="selectSubPlace(${index}, '${safeName}')">
-            <span class="sub-place-name">📍 ${sp.name}</span>
+          <div class="sub-place-item" onclick="selectSubPlace(${index}, ${spIdx})">
+            <div class="sub-place-info">
+              <span class="sub-place-name">📍 ${sp.name}</span>
+              <span class="sub-place-addr">${sp.address}</span>
+            </div>
             <span class="sub-place-cat">${sp.category}</span>
           </div>
         `;
@@ -499,17 +522,15 @@ function renderSidebarResults(results, users) {
 
       subPlacesHtml = `
         <div class="sub-places-box" onclick="event.stopPropagation()">
-          <div class="sub-places-title">🏢 ${item.name} 내 / 주변 상세 매장 선택</div>
+          <div class="sub-places-title">🏢 [${item.originalName || item.name}] 주변 추천 카페 및 맛집</div>
           <div class="sub-places-grid">
-            ${itemsHtml.length > 0 ? itemsHtml : '<div style="font-size:0.75rem; color:#666;">주변 매장 정보를 불러오는 중입니다...</div>'}
+            ${itemsHtml.length > 0 ? itemsHtml : '<div style="font-size:0.75rem; color:#666; padding:8px;">주변 카페/맛집 정보를 가져오는 중입니다...</div>'}
           </div>
         </div>
       `;
     }
 
     let routeDetailsHtml = '';
-    // script.js 의 renderSidebarResults 함수 내부 routeDetailsHtml 생성 부분 수정
-
     if (isSelected) {
       const timelineBlocks = item.userTimes.map(ut => {
         const user = users.find(u => u.label === ut.label) || {};
@@ -518,29 +539,51 @@ function renderSidebarResults(results, users) {
         const pLat = item.coords.lat;
         const pLng = item.coords.lng;
 
-        // 카카오맵 대중교통/도보 길찾기 URL 생성
         const kakaoNaviUrl = `https://map.kakao.com/link/to/${encodeURIComponent(item.name)},${pLat},${pLng}/from/${encodeURIComponent(ut.name)},${uLat},${uLng}`;
 
-        let stepsHtml = ut.mode === 'WALK'
-          ? `<li class="route-step">🚩 <strong>[출발]</strong> ${ut.name}</li>
-            <li class="route-step">🚶 직선/추정 도보 약 ${ut.distKm.toFixed(1)}km (약 ${ut.time}분)</li>
-            <li class="route-step">🏁 <strong>[도착]</strong> ${item.name}</li>`
-          : `<li class="route-step">🚩 <strong>[출발]</strong> ${ut.name}</li>
-            <li class="route-step">🚌 <strong>추정 소요시간:</strong> 약 ${ut.time}분 (${ut.distKm.toFixed(1)}km)</li>
-            <li class="route-step">🏁 <strong>[도착]</strong> ${item.name}</li>`;
+        let stepsHtml = '';
+        let naviBtnHtml = '';
+
+        if (ut.mode === 'WALK') {
+          stepsHtml = `
+            <li class="route-step">🚩 <strong>[출발]</strong> ${ut.name}</li>
+            <li class="route-step">🚶 <strong>도보 이동:</strong> 약 ${ut.distKm.toFixed(1)}km (소요시간 약 ${ut.time}분)</li>
+            <li class="route-step">🏁 <strong>[도착]</strong> ${item.name}</li>
+          `;
+          naviBtnHtml = `
+            <a href="${kakaoNaviUrl}" target="_blank" rel="noopener noreferrer" class="btn-navi btn-navi-walk">
+              <span class="btn-navi-content">
+                <span class="btn-navi-title">🚶 ${ut.label}의 도보 경로 확인</span>
+                <span class="btn-navi-sub">네비게이션 및 보행자 길안내</span>
+              </span>
+              <span class="btn-navi-arrow">↗</span>
+            </a>
+          `;
+        } else {
+          stepsHtml = `
+            <li class="route-step">🚩 <strong>[출발]</strong> ${ut.name}</li>
+            <li class="route-step">🚌 <strong>대중교통 이동:</strong> 약 ${ut.distKm.toFixed(1)}km (소요시간 약 ${ut.time}분)</li>
+            <li class="route-step">🏁 <strong>[도착]</strong> ${item.name}</li>
+          `;
+          naviBtnHtml = `
+            <a href="${kakaoNaviUrl}" target="_blank" rel="noopener noreferrer" class="btn-navi btn-navi-transit">
+              <span class="btn-navi-content">
+                <span class="btn-navi-title">🚌 ${ut.label}의 버스·지하철 경로 확인</span>
+                <span class="btn-navi-sub">실시간 버스 번호 및 탑승/하차 정류장 안내</span>
+              </span>
+              <span class="btn-navi-arrow">↗</span>
+            </a>
+          `;
+        }
 
         return `
           <div class="route-user-block">
             <div class="route-user-header">
               <span>${ut.label} (${ut.name})</span>
-              <span>총 약 ${ut.time}분</span>
+              <span>약 ${ut.time}분 소요</span>
             </div>
             <ul class="route-steps">${stepsHtml}</ul>
-            
-            <!-- 💡 실시간 버스 번호 및 정류장 안내 연동 버튼 -->
-            <a href="${kakaoNaviUrl}" target="_blank" rel="noopener noreferrer" class="btn-kakao-navi">
-              🚌 ${ut.label}의 실시간 버스 번호·정류장 길찾기 ↗
-            </a>
+            ${naviBtnHtml}
           </div>
         `;
       }).join('');
@@ -561,7 +604,7 @@ function renderSidebarResults(results, users) {
       <div class="user-time-summary">${userSummaryRows}</div>
       
       <button type="button" class="btn-more-details" onclick="event.stopPropagation(); toggleSubPlaces(${index});">
-        ${isExpanded ? '▲ 건물 내/주변 매장 접기' : '🔍 상세 장소 (카페·식당 등) 선택'}
+        ${isExpanded ? '▲ 주변 카페/식당 접기' : '🔍 주변 세부 매장 (카페·맛집) 선택'}
       </button>
 
       ${subPlacesHtml}
@@ -601,12 +644,29 @@ async function toggleSubPlaces(index) {
   renderSidebarResults(state.currentResults, validUsers);
 }
 
-function selectSubPlace(cardIndex, subPlaceName) {
+// 세부 매장 선택 시 장소 정보 업데이트 및 경로/지도 좌표 반영
+function selectSubPlace(cardIndex, subPlaceIndex) {
   const currentPlace = state.currentResults[cardIndex];
-  const originalName = currentPlace.name.split(' ➔ ')[0];
-  currentPlace.name = `${originalName} ➔ ${subPlaceName}`;
+  const subPlace = state.subPlacesData[cardIndex]?.[subPlaceIndex];
+  if (!subPlace) return;
 
+  if (!currentPlace.originalName) {
+    currentPlace.originalName = currentPlace.name;
+  }
+
+  // 매장명, 주소, 실제 좌표 업데이트
+  currentPlace.name = `${subPlace.name} (${currentPlace.originalName} 인근)`;
+  currentPlace.address = subPlace.address;
+  currentPlace.coords = subPlace.coords;
+
+  // 세부 매장 좌표 기준으로 이동시간/거리/공평성 점수 재계산
   const validUsers = state.users.filter(u => u.name.trim().length > 0);
+  currentPlace.userTimes = validUsers.map(user => {
+    const distKm = getDistanceKm(user.coords.lat, user.coords.lng, currentPlace.coords.lat, currentPlace.coords.lng);
+    return { label: user.label, name: user.name, mode: user.mode, distKm, time: calculateTravelTime(distKm, user.mode) };
+  });
+  currentPlace.metrics = calculateFairness(currentPlace.userTimes.map(u => u.time));
+
   renderSidebarResults(state.currentResults, validUsers);
   renderMapVisuals(validUsers, state.currentResults, cardIndex);
 }
