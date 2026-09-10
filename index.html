@@ -3,75 +3,103 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MeetFair - 가장 공평하고 다양한 만남 장소 찾기</title>
+  <title>MeetFair - 공평한 약속 장소 찾기</title>
   <link rel="stylesheet" href="style.css">
-  <script type="text/javascript" src="https://dapi.kakao.com/v2/maps/sdk.js?autoload=false&appkey=2f654884b4cd9c32ca0beca6daa59ab2&libraries=services"></script>
+  <!-- 카카오 지도 SDK (발급받은 JavaScript 키를 YOUR_JAVASCRIPT_KEY 부분에 넣어주세요) -->
+  <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=2f654884b4cd9c32ca0beca6daa59ab2&libraries=services"></script>
 </head>
 <body>
 
-  <div class="app-container">
-    <aside class="sidebar">
-      <header class="header">
-        <h1>MeetFair</h1>
-        <p>친구 모두에게 공평하고 취향에 맞는 장소를 찾아보세요.</p>
-        <button type="button" id="demo-btn" class="btn-demo">🧪 다양한 체험 데이터로 테스트</button>
-      </header>
+  <!-- 상단 헤더 -->
+  <header>
+    <div class="app-title">
+      <span>MeetFair</span>
+      <span style="font-size: 0.8rem; font-weight: 500; color: var(--text-sub); margin-left: 8px;">
+        친구 모두에게 공평하고 취향에 맞는 장소를 찾아보세요.
+      </span>
+    </div>
+    <button id="demo-btn" class="btn btn-secondary" style="font-size: 0.8rem; padding: 6px 12px; flex-shrink: 0;">
+      🧪 다양한 체험 데이터로 테스트
+    </button>
+  </header>
 
-      <div class="mode-tabs">
-        <button type="button" class="tab-btn active" id="tab-recommend">🏢 공평한 거점 추천</button>
-        <button type="button" class="tab-btn" id="tab-custom">📍 장소 직접 지정</button>
+  <!-- 메인 레이아웃 (사이드바 + 지도) -->
+  <div class="main-container">
+    
+    <!-- 좌측 사이드바 -->
+    <aside class="sidebar">
+      <!-- 탭 선택 -->
+      <div class="tab-group">
+        <button id="tab-recommend" class="tab-btn active">📊 공평한 거점 추천</button>
+        <button id="tab-custom" class="tab-btn">📍 장소 직접 지정</button>
       </div>
 
-      <section class="section">
-        <h2>1. 출발지 및 이동수단 (2~5명)</h2>
-        <div id="user-inputs" class="input-list"></div>
-        <button type="button" id="add-user-btn" class="btn-secondary">+ 친구 추가</button>
-      </section>
+      <!-- 1. 출발지 입력 영역 -->
+      <div class="input-section">
+        <h3 style="font-size: 0.95rem; font-weight: 800;">1. 출발지 및 이동수단 (2~5명)</h3>
+        <div id="user-inputs"></div>
+        <button id="add-user-btn" class="btn-add-user">+ 친구 추가</button>
+      </div>
 
-      <!-- 카테고리 필터 선택 -->
-      <section class="section" id="category-section">
-        <h2>2. 만남 테마 / 카테고리 선택</h2>
-        <div class="category-grid">
-          <label class="category-btn active"><input type="radio" name="landmark-type" value="ALL" checked> 🌈 전체 테마</label>
-          <label class="category-btn"><input type="radio" name="landmark-type" value="STATION"> 🚇 지하철/터미널</label>
-          <label class="category-btn"><input type="radio" name="landmark-type" value="MALL"> 🛍️ 백화점/쇼핑몰</label>
-          <label class="category-btn"><input type="radio" name="landmark-type" value="CAFE"> ☕ 대형카페/핫플</label>
-          <label class="category-btn"><input type="radio" name="landmark-type" value="PARK"> 🌳 광장/공원/거리</label>
-          <label class="category-btn"><input type="radio" name="landmark-type" value="CULTURE"> 📚 문화/영화/도서관</label>
+      <!-- 2. 카테고리 선택 영역 (공평한 거점 추천 모드) -->
+      <div id="category-section" class="input-section">
+        <h3 style="font-size: 0.95rem; font-weight: 800;">2. 만남 테마 / 카테고리 선택</h3>
+        <div class="category-group">
+          <label class="category-btn active">
+            <input type="radio" name="landmark-type" value="ALL" checked> 🌈 전체 테마
+          </label>
+          <label class="category-btn">
+            <input type="radio" name="landmark-type" value="STATION"> 🚇 지하철/터미널
+          </label>
+          <label class="category-btn">
+            <input type="radio" name="landmark-type" value="MALL"> 🛍️ 백화점/쇼핑몰
+          </label>
+          <label class="category-btn">
+            <input type="radio" name="landmark-type" value="CAFE"> ☕ 대형카페/핫플
+          </label>
+          <label class="category-btn">
+            <input type="radio" name="landmark-type" value="PARK"> 🌳 광장/공원/거리
+          </label>
+          <label class="category-btn">
+            <input type="radio" name="landmark-type" value="CULTURE"> 📚 문화/영화/도서관
+          </label>
         </div>
-      </section>
+      </div>
 
-      <!-- 직접 지정 모드 -->
-      <section class="section hidden" id="custom-place-section">
-        <h2>2. 만날 장소 직접 검색</h2>
+      <!-- 2. 커스텀 장소 입력 영역 (장소 직접 지정 모드) -->
+      <div id="custom-place-section" class="input-section hidden">
+        <h3 style="font-size: 0.95rem; font-weight: 800;">2. 약속 장소 직접 입력</h3>
         <div class="input-wrapper">
-          <input type="text" id="custom-place-input" placeholder="약속 장소 검색 (예: 행복로 문화의거리, CGV)" autocomplete="off">
-          <div class="search-dropdown hidden" id="dropdown-custom"></div>
+          <input type="text" id="custom-place-input" class="custom-input" placeholder="만날 장소 검색 (예: 의정부역, 홍대입구)" autocomplete="off">
+          <span id="selected-custom-badge" class="selected-addr-badge hidden"></span>
+          <div id="dropdown-custom" class="search-dropdown hidden"></div>
         </div>
-        <div id="selected-custom-badge" class="selected-addr-badge hidden"></div>
-      </section>
+      </div>
 
-      <button type="button" id="search-btn" class="btn-primary">공평한 약속 장소 찾기</button>
+      <!-- 검색 실행 버튼 -->
+      <div class="btn-group">
+        <button id="search-btn" class="btn btn-primary">공평한 약속 장소 찾기</button>
+      </div>
 
-      <div id="status-message" class="status-message hidden"></div>
+      <!-- 에러/상태 안내 메시지 -->
+      <div id="status-message" class="status-msg hidden"></div>
 
-      <!-- 추천 결과 영역 -->
-      <section id="result-section" class="result-section hidden">
-        <h2 id="result-title">🎯 추천 약속 거점</h2>
-        <p class="sub-tip">원하는 모임 장소를 클릭한 후 '상세 장소 더보기'를 누르면 내부/주변 매장을 정할 수 있습니다.</p>
-        <div id="ranking-cards" class="cards-list"></div>
-        <button type="button" id="load-more-btn" class="btn-load-more hidden">➕ 다른 추천 장소 더보기</button>
-      </section>
+      <!-- 검색 결과 카드 목록 영역 -->
+      <div id="result-section" class="hidden">
+        <div id="result-title" class="results-header">🎯 공평한 추천 약속 장소</div>
+        <div id="ranking-cards"></div>
+        <button id="load-more-btn" class="btn-load-more hidden">더 많은 장소 보기 (+5개)</button>
+      </div>
     </aside>
 
-    <main class="main-content">
-      <div id="map-container" class="map-container">
-        <div id="map"></div>
-        <div id="map-fallback-notice" class="map-notice hidden">
-          ⚠️ Kakao Map API 연결이 차단되었거나 도메인이 미등록되어 시각화 모드로 작동합니다.
-        </div>
+    <!-- 우측 지도 영역 -->
+    <main class="map-container">
+      <div id="map-fallback-notice" class="map-notice hidden">
+        ⚠️ Kakao 지도 API 키가 설정되지 않아 기본 모드로 동작 중입니다.
       </div>
+      <div id="map"></div>
     </main>
+
   </div>
 
   <script src="script.js"></script>
