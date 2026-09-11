@@ -25,7 +25,6 @@ body, html {
   color: var(--text-main);
 }
 
-/* 상단 헤더 */
 header {
   height: 60px;
   background: #ffffff;
@@ -45,7 +44,6 @@ header {
   color: var(--primary-color);
 }
 
-/* 메인 컨테이너 (좌측 사이드바 + 우측 지도) */
 .main-container {
   display: flex;
   height: calc(100vh - 60px);
@@ -53,7 +51,6 @@ header {
   overflow: hidden;
 }
 
-/* 좌측 사이드바 */
 .sidebar {
   width: 420px;
   min-width: 360px;
@@ -69,7 +66,6 @@ header {
   z-index: 10;
 }
 
-/* 우측 지도 */
 .map-container {
   flex: 1;
   height: 100%;
@@ -97,7 +93,6 @@ header {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
-/* 탭 스위치 */
 .tab-group {
   display: flex;
   background: #f1f5f9;
@@ -124,7 +119,6 @@ header {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
-/* 입력 섹션 */
 .input-section {
   display: flex;
   flex-direction: column;
@@ -156,7 +150,6 @@ header {
   border-color: var(--primary-color);
 }
 
-/* GPS 버튼 배치 */
 .user-input.has-gps-btn {
   padding-right: 85px;
 }
@@ -226,7 +219,6 @@ header {
   font-weight: 600;
 }
 
-/* 검색 드롭다운 */
 .search-dropdown {
   position: absolute;
   top: 100%;
@@ -267,7 +259,6 @@ header {
   color: var(--text-sub);
 }
 
-/* 카테고리 태그 그리드 */
 .category-group {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -298,7 +289,6 @@ header {
   color: var(--primary-color);
 }
 
-/* 버튼 스타일 */
 .btn-group {
   margin-top: 10px;
 }
@@ -333,7 +323,6 @@ header {
   background: #e2e8f0;
 }
 
-/* 상태 메시지 */
 .status-msg {
   padding: 10px 12px;
   background: #fef3c7;
@@ -343,7 +332,6 @@ header {
   font-weight: 600;
 }
 
-/* 결과 카드 섹션 */
 .results-header {
   font-size: 1rem;
   font-weight: 800;
@@ -437,7 +425,6 @@ header {
   background: #f1f5f9;
 }
 
-/* 서브 장소 (카페/식당) 박스 */
 .sub-places-box {
   margin-top: 10px;
   padding: 10px;
@@ -496,7 +483,6 @@ header {
   color: var(--primary-color);
 }
 
-/* 경로 상세 패널 및 길안내 버튼 */
 .route-detail-panel {
   margin-top: 12px;
   padding-top: 10px;
@@ -602,7 +588,6 @@ header {
   background: #f1f5f9;
 }
 
-/* 유틸리티 */
 .hidden {
   display: none !important;
 }
