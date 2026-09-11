@@ -1,5 +1,3 @@
-// script.js
-
 const state = {
   searchMode: 'RECOMMEND', // 'RECOMMEND' | 'CUSTOM'
   users: [
@@ -94,7 +92,6 @@ function setupEventListeners() {
   });
 }
 
-// 📍 브라우저 GPS로 내 현재 위치 자동 감지
 function getMyLocation() {
   if (!navigator.geolocation) {
     showStatus('이 브라우저에서는 GPS(위치 정보)를 지원하지 않습니다.');
@@ -111,7 +108,6 @@ function getMyLocation() {
 
       if (!meUser) return;
 
-      // 카카오 역지오코딩 서비스로 좌표를 사람이 읽을 수 있는 도로명 주소로 변환
       if (state.isKakaoAvailable && kakao.maps.services.Geocoder) {
         const geocoder = new kakao.maps.services.Geocoder();
         geocoder.coord2Address(lng, lat, (result, status) => {
