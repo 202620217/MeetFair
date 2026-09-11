@@ -406,7 +406,7 @@ function getFallbackDiversePlaces(type) {
   return allList;
 }
 
-// 카카오 공식 카테고리 API(CE7: 카페, FD6: 음식점)로 주변 600m 이내 매장 가져오기
+// 💡 [개선] 카카오 공식 카테고리 API(CE7: 카페, FD6: 음식점)를 통한 정밀 매장 검색
 function fetchSubPlacesAroundLandmark(coords) {
   return new Promise((resolve) => {
     if (!state.isKakaoAvailable) {
@@ -644,7 +644,7 @@ async function toggleSubPlaces(index) {
   renderSidebarResults(state.currentResults, validUsers);
 }
 
-// 세부 매장 선택 시 장소 정보 업데이트 및 경로/지도 좌표 반영
+// 💡 [수정] 세부 매장 선택 시 장소명 정리 및 실제 카페/식당 좌표로 최종 업데이트
 function selectSubPlace(cardIndex, subPlaceIndex) {
   const currentPlace = state.currentResults[cardIndex];
   const subPlace = state.subPlacesData[cardIndex]?.[subPlaceIndex];
@@ -654,12 +654,12 @@ function selectSubPlace(cardIndex, subPlaceIndex) {
     currentPlace.originalName = currentPlace.name;
   }
 
-  // 매장명, 주소, 실제 좌표 업데이트
+  // 장소명, 주소, 좌표를 선택한 세부 매장의 실제 정보로 변경
   currentPlace.name = `${subPlace.name} (${currentPlace.originalName} 인근)`;
   currentPlace.address = subPlace.address;
   currentPlace.coords = subPlace.coords;
 
-  // 세부 매장 좌표 기준으로 이동시간/거리/공평성 점수 재계산
+  // 세부 매장 좌표 기준으로 유저별 소요시간/거리 재계산
   const validUsers = state.users.filter(u => u.name.trim().length > 0);
   currentPlace.userTimes = validUsers.map(user => {
     const distKm = getDistanceKm(user.coords.lat, user.coords.lng, currentPlace.coords.lat, currentPlace.coords.lng);
