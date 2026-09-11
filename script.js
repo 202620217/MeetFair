@@ -65,7 +65,6 @@ function initMap() {
 function setupEventListeners() {
   document.getElementById('add-user-btn').addEventListener('click', addUser);
   document.getElementById('search-btn').addEventListener('click', handleSearch);
-  document.getElementById('demo-btn').addEventListener('click', loadDemoData);
   document.getElementById('load-more-btn').addEventListener('click', loadMoreResults);
 
   document.getElementById('tab-recommend').addEventListener('click', () => setMode('RECOMMEND'));
@@ -305,17 +304,6 @@ function addUser() {
   if (state.users.length >= 5) return showStatus('최대 5명까지 추가 가능합니다.');
   state.users.push({ id: state.nextUserId++, label: `친구 ${state.users.length}`, name: '', address: '', coords: null, mode: 'TRANSIT', isSelected: false });
   renderUserInputs();
-}
-
-function loadDemoData() {
-  hideStatus();
-  state.users = [
-    { id: 1, label: '나', name: '의정부역', address: FALLBACK_LOCATIONS['의정부역 (지하철역)'].address, coords: FALLBACK_LOCATIONS['의정부역 (지하철역)'], mode: 'TRANSIT', isSelected: true },
-    { id: 2, label: '친구 1', name: '회룡역', address: FALLBACK_LOCATIONS['회룡역'].address, coords: FALLBACK_LOCATIONS['회룡역'], mode: 'WALK', isSelected: true },
-    { id: 3, label: '친구 2', name: '민락동', address: FALLBACK_LOCATIONS['민락2지구 로데오거리'].address, coords: FALLBACK_LOCATIONS['민락2지구 로데오거리'], mode: 'TRANSIT', isSelected: true }
-  ];
-  renderUserInputs();
-  handleSearch();
 }
 
 function calculateTravelTime(distKm, mode) {
