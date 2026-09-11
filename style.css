@@ -631,3 +631,27 @@ header {
     height: 380px;
   }
 }
+/* GPS 버튼 스타일 추가 */
+.user-input.has-gps-btn {
+  padding-right: 85px; /* 버튼과 텍스트가 겹치지 않도록 우측 여백 확보 */
+}
+
+.btn-gps {
+  position: absolute;
+  right: 8px;
+  top: 10px;
+  background: var(--primary-color);
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+  z-index: 5;
+  transition: background 0.2s;
+}
+
+.btn-gps:hover {
+  background: var(--primary-hover);
+}
