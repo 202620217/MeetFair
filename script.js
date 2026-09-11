@@ -94,6 +94,60 @@ function setupEventListeners() {
   });
 }
 
+// 📍 브라우저 GPS로 내 현재 위치 자동 감지
+function getMyLocation() {
+  if (!navigator.geolocation) {
+    showStatus('이 브라우저에서는 GPS(위치 정보)를 지원하지 않습니다.');
+    return;
+  }
+
+  showStatus('📍 현재 위치를 측정하는 중입니다...');
+
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+      const lat = position.coords.latitude;
+      const lng = position.coords.longitude;
+      const meUser = state.users.find(u => u.id === 1 || u.label === '나');
+
+      if (!meUser) return;
+
+      // 카카오 역지오코딩 서비스로 좌표를 사람이 읽을 수 있는 도로명 주소로 변환
+      if (state.isKakaoAvailable && kakao.maps.services.Geocoder) {
+        const geocoder = new kakao.maps.services.Geocoder();
+        geocoder.coord2Address(lng, lat, (result, status) => {
+          hideStatus();
+          let addressName = '현재 위치 (GPS 인식됨)';
+          if (status === kakao.maps.services.Status.OK && result[0]) {
+            addressName = result[0].road_address
+              ? result[0].road_address.address_name
+              : result[0].address.address_name;
+          }
+          meUser.name = '내 현재 위치';
+          meUser.address = addressName;
+          meUser.coords = { lat, lng };
+          meUser.isSelected = true;
+          renderUserInputs();
+        });
+      } else {
+        hideStatus();
+        meUser.name = '내 현재 위치';
+        meUser.address = `GPS 좌표 (${lat.toFixed(4)}, ${lng.toFixed(4)})`;
+        meUser.coords = { lat, lng };
+        meUser.isSelected = true;
+        renderUserInputs();
+      }
+    },
+    (error) => {
+      let errorMsg = '위치 정보를 가져올 수 없습니다.';
+      if (error.code === error.PERMISSION_DENIED) {
+        errorMsg = '위치 권한이 거부되었습니다. 브라우저 주소창 왼쪽 권한 설정에서 위치를 허용해 주세요.';
+      }
+      showStatus(errorMsg);
+    },
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+  );
+}
+
 function setMode(mode) {
   state.searchMode = mode;
   const tabRec = document.getElementById('tab-recommend');
@@ -119,11 +173,18 @@ function renderUserInputs() {
   container.innerHTML = '';
 
   state.users.forEach((user) => {
+    const isMe = user.id === 1 || user.label === '나';
     const row = document.createElement('div');
     row.className = 'input-row';
     row.innerHTML = `
       <div class="input-wrapper">
-        <input type="text" placeholder="${user.label} 출발지 (예: 의정부역)" value="${user.name}" data-id="${user.id}" class="user-input" autocomplete="off">
+        <input type="text" 
+               placeholder="${user.label} 출발지 (예: 의정부역)" 
+               value="${user.name}" 
+               data-id="${user.id}" 
+               class="user-input ${isMe ? 'has-gps-btn' : ''}" 
+               autocomplete="off">
+        ${isMe ? `<button type="button" class="btn-gps" onclick="getMyLocation()">📍 내 위치</button>` : ''}
         ${user.isSelected && user.address ? `<span class="selected-addr-badge">✓ ${user.address}</span>` : ''}
         <div class="search-dropdown hidden" id="dropdown-${user.id}"></div>
       </div>
@@ -406,7 +467,6 @@ function getFallbackDiversePlaces(type) {
   return allList;
 }
 
-// 💡 [개선] 카카오 공식 카테고리 API(CE7: 카페, FD6: 음식점)를 통한 정밀 매장 검색
 function fetchSubPlacesAroundLandmark(coords) {
   return new Promise((resolve) => {
     if (!state.isKakaoAvailable) {
@@ -427,7 +487,6 @@ function fetchSubPlacesAroundLandmark(coords) {
     };
     const subList = [];
 
-    // 1. 카카오 공식 카페 카테고리 검색 (CE7)
     ps.categorySearch('CE7', (cafeData, cafeStatus) => {
       if (cafeStatus === kakao.maps.services.Status.OK && cafeData.length > 0) {
         cafeData.slice(0, 4).forEach(item => {
@@ -440,7 +499,6 @@ function fetchSubPlacesAroundLandmark(coords) {
         });
       }
 
-      // 2. 카카오 공식 음식점 카테고리 검색 (FD6)
       ps.categorySearch('FD6', (foodData, foodStatus) => {
         if (foodStatus === kakao.maps.services.Status.OK && foodData.length > 0) {
           foodData.slice(0, 4).forEach(item => {
@@ -644,7 +702,6 @@ async function toggleSubPlaces(index) {
   renderSidebarResults(state.currentResults, validUsers);
 }
 
-// 💡 [수정] 세부 매장 선택 시 장소명 정리 및 실제 카페/식당 좌표로 최종 업데이트
 function selectSubPlace(cardIndex, subPlaceIndex) {
   const currentPlace = state.currentResults[cardIndex];
   const subPlace = state.subPlacesData[cardIndex]?.[subPlaceIndex];
@@ -654,12 +711,10 @@ function selectSubPlace(cardIndex, subPlaceIndex) {
     currentPlace.originalName = currentPlace.name;
   }
 
-  // 장소명, 주소, 좌표를 선택한 세부 매장의 실제 정보로 변경
   currentPlace.name = `${subPlace.name} (${currentPlace.originalName} 인근)`;
   currentPlace.address = subPlace.address;
   currentPlace.coords = subPlace.coords;
 
-  // 세부 매장 좌표 기준으로 유저별 소요시간/거리 재계산
   const validUsers = state.users.filter(u => u.name.trim().length > 0);
   currentPlace.userTimes = validUsers.map(user => {
     const distKm = getDistanceKm(user.coords.lat, user.coords.lng, currentPlace.coords.lat, currentPlace.coords.lng);
