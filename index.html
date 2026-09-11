@@ -5,8 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MeetFair - 공평한 약속 장소 찾기</title>
   <link rel="stylesheet" href="style.css">
-  <!-- 카카오 지도 SDK (발급받은 JavaScript 키를 YOUR_JAVASCRIPT_KEY 부분에 넣어주세요) -->
-  <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=YOUR_JAVASCRIPT_KEY&libraries=services"></script>
+  
+  <!-- 
+  ========================================================================
+  🚨 카카오 지도 API 키 입력 방법 🚨
+  아래 스크립트 태그의 'YOUR_JAVASCRIPT_KEY' 부분을 지우고, 
+  발급받으신 카카오 JavaScript 앱 키를 따옴표 없이 그대로 붙여넣어 주세요.
+  (예시: src="//dapi.kakao.com/v2/maps/sdk.js?appkey=12a34b56c7890def&libraries=services")
+  ========================================================================
+  -->
+  <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=2f654884b4cd9c32ca0beca6daa59ab2&libraries=services"></script>
 </head>
 <body>
 
@@ -18,9 +26,6 @@
         친구 모두에게 공평하고 취향에 맞는 장소를 찾아보세요.
       </span>
     </div>
-    <button id="demo-btn" class="btn btn-secondary" style="font-size: 0.8rem; padding: 6px 12px; flex-shrink: 0;">
-      🧪 다양한 체험 데이터로 테스트
-    </button>
   </header>
 
   <!-- 메인 레이아웃 (사이드바 + 지도) -->
